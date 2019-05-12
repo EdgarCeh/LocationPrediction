@@ -4,6 +4,7 @@
 """
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import sys
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -37,14 +38,34 @@ def plot_trajectory(data):
     :param y:
     :return:
     """
-    if isinstance(data, tuple):
-        x = data[0]
-        y = data[1]
+    if isinstance(data, np.ndarray):
+        x = data[:,0]
+        y = data[:,1]
+
         plt.plot(x,y, label='Trajectory')
 
     else:
         plt.plot(data, label='Trajectory')
 
+    plt.show()
+
+
+def plot_compre_trajectories(actual_data, pred_data):
+    """
+
+    :param x:
+    :param y:
+    :return:
+    """
+    actual_x = actual_data[:,0]
+    actual_y = actual_data[:,1]
+
+    pred_x = pred_data[:, 0]
+    pred_y = pred_data[:, 1]
+
+    plt.plot(actual_x, actual_y, label='Actual Trajectory')
+    plt.plot(pred_x, pred_y, label='Predicted Trajectory')
+    plt.legend(["Actual", "Predicted"])
     plt.show()
 
 
@@ -56,6 +77,18 @@ def scale_data(data):
     """
     sc = MinMaxScaler()
     return sc, sc.fit_transform(data)
+
+
+def inverse_scale_data(sc, data):
+    """
+
+    :param sc:
+    :param data:
+    :return:
+    """
+    data = sc.inverse_transform(data)
+    return data
+
 
 
 def get_all_data(filename):
