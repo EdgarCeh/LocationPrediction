@@ -1,22 +1,29 @@
 import numpy as np
-
-import matplotlib.pyplot as plt
-import pandas as pd
 import torch
 import torch.nn as nn
 from torch.autograd import  Variable
 import sys
+
+import pandas as pd
 
 from Common import *
 import Utilities as utils
 
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 
 df = utils.get_all_data(FILENAME_ALL_DATA)
 df = utils.get_target_data(df, TARGET_ID)
 
+print(df.shape)
+
+if CONCAT :
+    df = pd.concat([df]*N_TIMES)
+
 print(df.head(seq_length+1))
+print(df.shape)
+
 
 data = df[[X,Y]].values.tolist()
 print(data)
@@ -91,12 +98,12 @@ class LSTM(nn.Module):
 
     def forward(self, x):
 
-        h_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)).to(device)
+        h_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
         ##print("h_0 shape:",h_0.size())
-
-        c_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)).to(device)
+        c_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
         ##print("c_0 shape:", c_0.size())
 
+        '''
         # Propagate input through LSTM
         ula, (h_out, _) = self.lstm(x, (h_0, c_0))
         h_out = h_out.view(-1, self.hidden_size)
@@ -104,7 +111,19 @@ class LSTM(nn.Module):
 
         out = self.fc(h_out)
         ##print("out shape:", out.size())
-
+        '''
+        # Forward propagate LSTM
+        out, _ = self.lstm(x, (h_0, c_0)) #out: tensor of shape (batch, seq_length, hidden_size)
+        #print(out.size())
+        #print("Heere!")
+        out = out[:, -1, :]
+        #print(out.size())
+        out = out.view(-1, hidden_size)
+        #print(out.size())
+        # Decode the hidden state of the last time step
+        ##out = self.fc(out[:, -1, :])
+        out = self.fc(out)
+        #sys.exit(0)
         return out
 
 
