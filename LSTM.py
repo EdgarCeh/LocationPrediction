@@ -1,3 +1,8 @@
+"""
+This LSTM model works with only one target.
+The target needts to be specified in Common.TARGET_ID
+"""
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -103,25 +108,13 @@ class LSTM(nn.Module):
         c_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
         ##print("c_0 shape:", c_0.size())
 
-        '''
-        # Propagate input through LSTM
-        ula, (h_out, _) = self.lstm(x, (h_0, c_0))
-        h_out = h_out.view(-1, self.hidden_size)
-        ##print("h_out shape:", h_out.size())
-
-        out = self.fc(h_out)
-        ##print("out shape:", out.size())
-        '''
         # Forward propagate LSTM
         out, _ = self.lstm(x, (h_0, c_0)) #out: tensor of shape (batch, seq_length, hidden_size)
         #print(out.size())
-        #print("Heere!")
         out = out[:, -1, :]
         #print(out.size())
         out = out.view(-1, hidden_size)
         #print(out.size())
-        # Decode the hidden state of the last time step
-        ##out = self.fc(out[:, -1, :])
         out = self.fc(out)
         #sys.exit(0)
         return out
@@ -142,6 +135,7 @@ for epoch in range(num_epochs):
     loss = criterion(outputs, trainY)
     loss.backward()
     optimizer.step()
+
     print("Epoch: %d, loss: %1.5f" % (epoch, loss.data))
 
 
@@ -150,8 +144,12 @@ test_predict = lstm(testX)
 
 test_predict = utils.inverse_scale_data(sc, test_predict.data.cpu().numpy())
 testY = utils.inverse_scale_data(sc, testY.data.cpu().numpy())
+
+test_acc = utils.model_accuracy(testY, test_predict)
+
 print(testY.shape)
 print(test_predict.shape)
 
+print("Test Accuracy (MSE): ", test_acc)
 
 utils.plot_compre_trajectories(testY, test_predict)
