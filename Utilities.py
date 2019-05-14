@@ -1,5 +1,5 @@
 """
-
+This only uses XLocation, and YLocation for the prediction
 
 """
 import pandas as pd
@@ -8,8 +8,40 @@ import numpy as np
 import sys
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import r2_score, mean_squared_error
+from math import sqrt
 
 from Common import *
+
+def model_accuracy(y_true, y_pred):
+    """
+
+    :param y_true:
+    :param y_pred:
+    :return:
+    """
+    return mean_squared_error(y_true, y_pred)
+
+def sliding_windows_all_data(data, seq_length):
+    """
+
+    :param data:
+    :param seq_length:
+    :return:
+    """
+    x = []
+    y = []
+
+    for i in range(len(data)-seq_length-1):
+        _x = data[i:(i+seq_length)][:,:-2]
+        _y = data[i+seq_length][-2:]
+
+        x.append(_x)
+        y.append(_y)
+
+
+    return np.array(x),np.array(y)
+
 
 
 def sliding_windows(data, seq_length):
@@ -25,13 +57,14 @@ def sliding_windows(data, seq_length):
     for i in range(len(data)-seq_length-1):
         _x = data[i:(i+seq_length)]
         _y = data[i+seq_length]
+
         x.append(_x)
         y.append(_y)
 
     return np.array(x),np.array(y)
 
 
-def plot_trajectory(data):
+def plot_trajectory(data, cols=[0,1]):
     """
 
     :param x:
@@ -39,8 +72,8 @@ def plot_trajectory(data):
     :return:
     """
     if isinstance(data, np.ndarray):
-        x = data[:,0]
-        y = data[:,1]
+        x = data[:,cols[0]]
+        y = data[:,cols[1]]
 
         plt.plot(x,y, label='Trajectory')
 
