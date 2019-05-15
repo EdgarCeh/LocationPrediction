@@ -12,13 +12,18 @@ import  sys
 DATA_POINTS = 10000
 
 
-def define_shape(x, y):
+def define_shape(x, y, train=True):
     """
 
     :param x:
     :param y:
     :return:
     """
+    if train:
+        l = 0
+    else:
+        l = 1
+
     df_x = pd.DataFrame(data=x)
     # print(df_x)
     df_y = pd.DataFrame(data=y)
@@ -27,8 +32,8 @@ def define_shape(x, y):
     df = pd.concat([df_x, df_y], axis=1)
     df.columns = ['a', 'b', 'c']
 
-    df['a'] = df['a'].apply(lambda x: x+100)
-    df['b'] = df['b'].apply(lambda x: x + 200)
+    df['a'] = df['a'].apply(lambda x: x+100+l)
+    df['b'] = df['b'].apply(lambda x: x + 200+l)
 
     df = df[df.c == 0]
     dataset = df.values
@@ -36,24 +41,31 @@ def define_shape(x, y):
     return dataset
 
 
-def create_shape(shape_type):
+def create_shape(shape_type, train=True):
     dataset = []
     shape = ''
+
+    if train:
+        l = 0
+
+    else:
+        l = 1
+
     if shape_type == 1:
         shape = "line"
         print(shape.upper())
 
         for i in range(DATA_POINTS):
-            x = 100 + (i/100)
-            y = 200
+            x = 100 + (i/100) + l
+            y = 200 + l
             coordinates = [x,y]
             dataset.append(coordinates)
 
     elif shape_type == 2:
         shape = "moon"
         print(shape.upper())
-        x, y= make_moons(n_samples=DATA_POINTS, shuffle=False, noise=None)
-        dataset = define_shape(x, y)
+        x, y= make_moons(n_samples=DATA_POINTS, shuffle=False, noise=None, random_state=l)
+        dataset = define_shape(x, y, train)
 
         dataset = dataset[:,[0,1]]
 
@@ -67,8 +79,8 @@ def create_shape(shape_type):
         #print(right_points)
 
         for i in range(down_points):
-            x = 100
-            y = 200 - (i/100)
+            x = 100 + l
+            y = 200 - (i/100) + l
             coordinates = [x,y]
             dataset.append(coordinates)
 
@@ -85,8 +97,8 @@ def create_shape(shape_type):
     elif shape_type == 4:
         shape = "circle"
         print(shape.upper())
-        x, y = make_circles(n_samples=DATA_POINTS, shuffle=False)
-        dataset = define_shape(x, y)
+        x, y = make_circles(n_samples=DATA_POINTS, shuffle=False, random_state=l)
+        dataset = define_shape(x, y, train)
         dataset = dataset[:, [0, 1]]
 
     else:
@@ -97,18 +109,23 @@ def create_shape(shape_type):
     #print(dataset)
     #print(type(dataset))
 
-    save_dataset(dataset, shape)
+    save_dataset(dataset, shape, train)
     return dataset
 
 
-def save_dataset(data, shape):
+def save_dataset(data, shape, train=True):
     """
 
     :param data:
     :param shape:
     :return:
     """
-    filename = shape+'_'+ str(DATA_POINTS) + ".csv"
+    if train:
+        label = 'train'
+    else:
+        label = 'test'
+
+    filename = shape+'_'+ str(DATA_POINTS) + '_'+ label +".csv"
     print('[INFO] Saving generated dataset to', filename)
     np.savetxt('data/'+filename, data, delimiter=',')
 
@@ -116,5 +133,5 @@ def save_dataset(data, shape):
 
 if __name__ == "__main__":
 
-    dataset = create_shape(4)
+    dataset = create_shape(4, train=False)
     utils.plot_trajectory(dataset)
