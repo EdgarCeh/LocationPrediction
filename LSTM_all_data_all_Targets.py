@@ -1,5 +1,5 @@
 """
-This LSTM model works with ALL targets, but only with XLocation, YLocation
+This LSTM model works with ALL targets, using all data columns
 
 """
 
@@ -23,8 +23,8 @@ df = utils.get_all_data(FILENAME_ALL_DATA)
 
 print(df.shape)
 
-#if CONCAT :
-#    df = pd.concat([df]*N_TIMES)
+if CONCAT :
+    df = pd.concat([df]*N_TIMES)
 
 print(df.head(seq_length+1))
 print(df.tail())
@@ -32,20 +32,24 @@ print(df.shape)
 
 target_ids_count = df.groupby(['id']).size()
 
-data = df[[X,Y]].values.tolist()
+columns = list(df.columns)[1:]      # Remove "id" column
+print(columns)
+print("Total columns:", len(columns))
+
+data = df[columns].values.tolist()
 print(data)
-print("Train Data shape:",np.asarray(data).shape)
-
-print("[INFO] Scaling data")
+print(np.asarray(data).shape)
 sc, scaled_data = utils.scale_data(data)
-
 print(scaled_data[:seq_length+1])
-print("Scaled Train data shape:",np.asarray(scaled_data).shape)
+print(np.asarray(scaled_data).shape)
 print(type(scaled_data))
-#utils.plot_trajectory(y_data)
-utils.plot_trajectory(scaled_data)
 
-# Only working with one data here
+# The second parameter is the pair of columns to plot
+#  [11, 12] =  XPixel, YPixel
+#  [14, 15] = XLocation, YLocation
+# Default uses [0,1]
+utils.plot_trajectory(scaled_data, [14,15])
+
 print(list(target_ids_count))
 start = 0
 allSequences = None
@@ -55,7 +59,7 @@ for i, instances in enumerate(list(target_ids_count)):
     end = instances*(i+1)-1
     print(start, end)
 
-    sequences, targets = utils.sliding_windows(scaled_data[start:end,:], seq_length)
+    sequences, targets = utils.sliding_windows_all_data(scaled_data[start:end,:], seq_length)
     print("Sequences size:", sequences.shape)
     print("Targets size:", targets.shape)
 
@@ -70,15 +74,20 @@ for i, instances in enumerate(list(target_ids_count)):
 
     start = instances * (i + 1)
 
+#
+#sequences, targets = utils.sliding_windows_all_data(scaled_data, seq_length)
+#print("Sequences size:", sequences.shape)
+#print("Targets size:", targets.shape)
+
 print("Sequences:")
 print(sequences[0])
 print("Targets:")
 print(targets[0])
 
-real_seq = utils.inverse_scale_data(sc, sequences[0])
-print(real_seq)
-real_target = utils.inverse_scale_data(sc, [targets[0]])
-print(real_target)
+##real_seq = utils.inverse_scale_data(sc, sequences[0])
+##print(real_seq)
+##real_target = utils.inverse_scale_data(sc, [targets[0]])
+##print(real_target)
 
 train_size = int(len(targets) * TRAIN_PCT)
 test_size = len(targets) - train_size
@@ -109,6 +118,7 @@ print("Train y size:", trainY.size())
 print("Test X size:", testX.size())
 print("Test Y size:", testX.size())
 
+
 class LSTM(nn.Module):
 
     def __init__(self, output_size, features, hidden_size, num_layers):
@@ -131,25 +141,13 @@ class LSTM(nn.Module):
         c_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
         ##print("c_0 shape:", c_0.size())
 
-        '''
-        # Propagate input through LSTM
-        ula, (h_out, _) = self.lstm(x, (h_0, c_0))
-        h_out = h_out.view(-1, self.hidden_size)
-        ##print("h_out shape:", h_out.size())
-
-        out = self.fc(h_out)
-        ##print("out shape:", out.size())
-        '''
         # Forward propagate LSTM
         out, _ = self.lstm(x, (h_0, c_0)) #out: tensor of shape (batch, seq_length, hidden_size)
         #print(out.size())
-        #print("Heere!")
         out = out[:, -1, :]
         #print(out.size())
         out = out.view(-1, hidden_size)
         #print(out.size())
-        # Decode the hidden state of the last time step
-        ##out = self.fc(out[:, -1, :])
         out = self.fc(out)
         #sys.exit(0)
         return out
@@ -177,8 +175,12 @@ for epoch in range(num_epochs):
 lstm.eval()
 test_predict = lstm(testX)
 
-test_predict = utils.inverse_scale_data(sc, test_predict.data.cpu().numpy())
-testY = utils.inverse_scale_data(sc, testY.data.cpu().numpy())
+##test_predict = utils.inverse_scale_data(sc, test_predict.data.cpu().numpy())
+##testY = utils.inverse_scale_data(sc, testY.data.cpu().numpy())
+
+test_predict = test_predict.data.cpu().numpy()
+testY = testY.data.cpu().numpy()
+
 
 test_acc = utils.model_accuracy(testY, test_predict)
 

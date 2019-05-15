@@ -1,6 +1,6 @@
 """
-This LSTM model works with only one target.
-The target needts to be specified in Common.TARGET_ID
+This LSTM model works with only one target, but using all data columns
+The target needs to be specified in Common.TARGET_ID
 """
 
 import numpy as np
